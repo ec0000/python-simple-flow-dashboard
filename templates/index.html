@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Flask AJAX Polling and Konva.js Example</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://unpkg.com/konva@8.0.4/konva.min.js"></script>
+    <script type="text/javascript">
+        $(document).ready(function(){
+            var shapes = {}; // to keep track of our shapes
+            function fetchTime() {
+                $.ajax({
+                    url: '/time',
+                    type: 'GET',
+                    success: function(data) {
+                        $('#time').text('Server time: ' + data.time);
+                    },
+                    error: function(error) {
+                        console.log('Error: ', error);
+                    }
+                });
+            }
+            // Fetch time immediately and then every 2 seconds
+            fetchTime();
+            setInterval(fetchTime, 5000);
+
+            function fetchFlowState() {
+                $.ajax({
+                    url: '/flowstate',
+                    type: 'GET',
+                    success: function(data) {
+                        var message = '{"Current process": "' + data.state + '"}';
+                        $('#flowStateMessages').append(message + '\n');
+                        document.getElementById('flowStateMessages').scrollTop = document.getElementById('flowStateMessages').scrollHeight;
+
+                        // reset all boxes to blue
+                        for (var key in shapes) {
+                            shapes[key].fill('blue');
+                        }
+                        // highlight the current state
+                        var shape = shapes[data.state];
+                        if (shape) {
+                            shape.fill('red');
+                        }
+                        layer.draw(); // redraw to reflect changes
+                    },
+                    error: function(error) {
+                        console.log('Error: ', error);
+                    }
+                });
+            }
+            // Fetch flow state every 2 seconds
+            setInterval(fetchFlowState, 5000);
+
+            // Konva.js flow diagram
+            var stage = new Konva.Stage({
+                container: 'container',
+                width: 1200, // increased width
+                height: 200,
+            });
+
+            var layer = new Konva.Layer();
+            stage.add(layer);
+
+            var boxHeight = 50;
+            var boxWidth = 120;
+            var startX = 20;
+            var startY = stage.height() / 2 - boxHeight / 2;
+
+            var labels = ['Order-Book', 'Check-Order', 'Check-Inventory', 'Process-Payment', 'Deliver-Book'];
+            var arrowLength = 80;
+
+            for (var i = 0; i < labels.length; i++) {
+                var box = new Konva.Rect({
+                    x: startX + i * (boxWidth + arrowLength),
+                    y: startY,
+                    width: boxWidth,
+                    height: boxHeight,
+                    fill: 'blue',
+                    stroke: 'black',
+                    strokeWidth: 2,
+                });
+                layer.add(box);
+                shapes[labels[i]] = box; // keep a reference to the box
+
+                var text = new Konva.Text({
+                    x: box.x(),
+                    y: box.y(),
+                    text: labels[i],
+                    fontSize: 18,
+                    width: boxWidth,
+                    padding: 10,
+                    align: 'center',
+                    verticalAlign: 'middle',
+                    fill: 'white',
+                });
+                layer.add(text);
+
+                if (i < labels.length - 1) {
+                    var arrow = new Konva.Arrow({
+                        points: [
+                            box.x() + boxWidth,
+                            box.y() + boxHeight / 2,
+                            box.x() + boxWidth + arrowLength,
+                            box.y() + boxHeight / 2,
+                        ],
+                        pointerLength: 10,
+                        pointerWidth: 10,
+                        fill: 'green',
+                        stroke: 'green',
+                        strokeWidth: 2,
+                    });
+                    layer.add(arrow);
+                }
+            }
+
+            layer.draw();
+        });
+    </script>
+</head>
+<body>
+    <p id="time"></p>
+    <div id="container"></div>
+    <textarea id="flowStateMessages" rows="10" cols="50" readonly></textarea>
+</body>
+</html>
