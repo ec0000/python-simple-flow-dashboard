@@ -9,6 +9,15 @@ The flow follows the following states:
 - `Process-Payment`
 - `Deliver-Book`
 
+- The application polls the server for flow state changes. It appends a message to a text area and highlights the flow state.
+- To change the flow state,
+```bash
+curl -X POST -H "Content-Type: application/json" -d '{"key":"value"}' http://localhost:5000/setflowstate/Order-Book
+```
+Or use Postman to use the API.
+
+This will send a POST request to http://localhost:5000/setflowstate/Order-Book with the JSON payload {"key":"value"}. The server should print this payload to the console and set the current flow state to 'Order-Book'.
+
 ## Prerequisites
 
 - Python 3
